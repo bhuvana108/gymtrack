@@ -29,6 +29,11 @@ export async function getSessions() {
   return res.json();
 }
 
+export async function getSessionSets(sessionId: number) {
+  const res = await fetch(`${API_URL}/sessions/${sessionId}/sets`);
+  return res.json();
+}
+
 export async function createSession(data: {
   date: string;
   notes?: string;
