@@ -1,3 +1,5 @@
+//exercises page frontend
+
 "use client";
 
 import { useEffect, useState } from "react";
