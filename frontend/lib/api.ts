@@ -1,4 +1,5 @@
-const API_URL = "http://localhost:8000";
+
+const API_URL = "http://127.0.0.1:8000";
 //where the frontend and backend actually connect and talk to each other
 
 //Exercises 

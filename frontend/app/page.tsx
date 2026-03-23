@@ -1,4 +1,6 @@
 import Image from "next/image";
+import { getExercises } from "@/lib/api";
+
 
 export default function Home() {
   return (
