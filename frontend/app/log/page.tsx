@@ -38,6 +38,7 @@ export default function LogPage() {
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [inputError, setInputError] = useState("");
   const dateInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedExercise = exercises.find((e) => e.id === Number(selectedExerciseId));
@@ -48,17 +49,51 @@ export default function LogPage() {
     getExercises().then(setExercises);
   }, []);
 
+  function validateRange(value: string) {
+    if (value === "") {
+      setInputError("");
+      return;
+    }
+
+    const num = Number(value);
+    if (num < 0 || num > 300) {
+      setInputError("Invalid input entered! Max: 300 lbs");
+    } else {
+      setInputError("");
+    }
+  }
+
   function handleAddSet() {
     if (!selectedExercise) return;
+    setInputError("");
+
+    const repsValue = Number(reps);
+    const weightValue = Number(weight);
+    const timeValue = Number(time);
+    const levelValue = Number(level);
+    const speedValue = Number(speed);
+    const inclineValue = Number(incline);
 
     if (isCardio) {
-      if (isTreadmill) {
-        if (!time || !speed) return;
-      } else {
-        if (!time || !level) return;
+      if (!time || !level || !speed) return;
+      if (
+        timeValue < 0 ||
+        timeValue > 300 ||
+        levelValue < 0 ||
+        levelValue > 300 ||
+        speedValue < 0 ||
+        speedValue > 300 ||
+        (isTreadmill && incline && (inclineValue < 0 || inclineValue > 300))
+      ) {
+        setInputError("Invalid Input entered");
+        return;
       }
     } else {
       if (!reps || !weight) return;
+      if (repsValue < 0 || repsValue > 300 || weightValue < 0 || weightValue > 300) {
+        setInputError("Invalid Input entered");
+        return;
+      }
     }
 
     // count how many sets already exist for this exercise
@@ -71,18 +106,15 @@ export default function LogPage() {
     };
 
     if (isCardio) {
-      newSet.time = Number(time);
-      if (isTreadmill) {
-        newSet.speed = Number(speed);
-        if (incline) {
-          newSet.incline = Number(incline);
-        }
-      } else {
-        newSet.level = Number(level);
+      newSet.time = timeValue;
+      newSet.level = levelValue;
+      newSet.speed = speedValue;
+      if (isTreadmill && incline) {
+        newSet.incline = inclineValue;
       }
     } else {
-      newSet.reps = Number(reps);
-      newSet.weight_lbs = Number(weight);
+      newSet.reps = repsValue;
+      newSet.weight_lbs = weightValue;
     }
 
     setSets((prev) => [...prev, newSet]);
@@ -97,6 +129,7 @@ export default function LogPage() {
   }
 
   function handleRemoveSet(index: number) {
+    setInputError("");
     setSets((prev) => prev.filter((_, i) => i !== index));
   }
 
@@ -118,6 +151,7 @@ export default function LogPage() {
 
   async function handleSave() {
     if (sets.length === 0) return;
+    setInputError("");
     setSaving(true);
 
     await createSession({
@@ -198,28 +232,43 @@ export default function LogPage() {
               <div className="flex gap-2">
                 <input
                   type="number"
+                  min="0"
+                  max="300"
                   step="0.1"
                   placeholder="Time (min)"
                   value={time}
-                  onChange={(e) => setTime(e.target.value)}
+                  onChange={(e) => {
+                    setTime(e.target.value);
+                    validateRange(e.target.value);
+                  }}
                   className="border border-gray-300 rounded px-3 py-2 text-sm w-full"
                 />
                 {isTreadmill ? (
                   <input
                     type="number"
+                    min="0"
+                    max="300"
                     step="0.1"
                     placeholder="Speed (mph)"
                     value={speed}
-                    onChange={(e) => setSpeed(e.target.value)}
+                    onChange={(e) => {
+                      setSpeed(e.target.value);
+                      validateRange(e.target.value);
+                    }}
                     className="border border-gray-300 rounded px-3 py-2 text-sm w-full"
                   />
                 ) : (
                   <input
                     type="number"
+                    min="0"
+                    max="300"
                     step="0.1"
                     placeholder="Speed Number (e.g. 1, 2, 6)"
                     value={level}
-                    onChange={(e) => setLevel(e.target.value)}
+                    onChange={(e) => {
+                      setLevel(e.target.value);
+                      validateRange(e.target.value);
+                    }}
                     className="border border-gray-300 rounded px-3 py-2 text-sm w-full"
                   />
                 )}
@@ -228,10 +277,15 @@ export default function LogPage() {
                 {isTreadmill && (
                   <input
                     type="number"
+                    min="0"
+                    max="300"
                     step="0.1"
                     placeholder="Incline (%)"
                     value={incline}
-                    onChange={(e) => setIncline(e.target.value)}
+                    onChange={(e) => {
+                      setIncline(e.target.value);
+                      validateRange(e.target.value);
+                    }}
                     className="border border-gray-300 rounded px-3 py-2 text-sm w-full"
                   />
                 )}
@@ -241,16 +295,26 @@ export default function LogPage() {
             <div className="flex gap-2">
               <input
                 type="number"
+                min="0"
+                max="300"
                 placeholder="Reps"
                 value={reps}
-                onChange={(e) => setReps(e.target.value)}
+                onChange={(e) => {
+                  setReps(e.target.value);
+                  validateRange(e.target.value);
+                }}
                 className="border border-gray-300 rounded px-3 py-2 text-sm w-full"
               />
               <input
                 type="number"
+                min="0"
+                max="300"
                 placeholder="Weight (lbs)"
                 value={weight}
-                onChange={(e) => setWeight(e.target.value)}
+                onChange={(e) => {
+                  setWeight(e.target.value);
+                  validateRange(e.target.value);
+                }}
                 className="border border-gray-300 rounded px-3 py-2 text-sm w-full"
               />
             </div>
@@ -262,6 +326,10 @@ export default function LogPage() {
           >
             + {isCardio ? "Add Cardio Details" : "Add Set"}
           </button>
+
+          {inputError && (
+            <p className="text-red-500 text-xs mt-1">{inputError}</p>
+          )}
         </div>
       </div>
 
