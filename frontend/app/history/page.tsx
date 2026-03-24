@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getSessions, deleteSession, getSessionSets } from "@/lib/api";
+import { getSessions, getSessionSets } from "@/lib/api";
 
 interface Session {
   id: number;
@@ -14,15 +14,25 @@ interface Session {
 interface SetDetail {
   exercise_name: string;
   set_number: number;
-  reps: number;
-  weight_lbs: number;
+  reps?: number;
+  weight_lbs?: number;
+  time?: number;
+  level?: number;
+  speed?: number;
+  incline?: number;
+}
+
+interface GroupedSessions {
+  date: string;
+  sessions: Session[];
+  allSets?: SetDetail[];
 }
 
 export default function HistoryPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [setsMap, setSetsMap] = useState<Record<number, SetDetail[]>>({});
+  const [expandedDate, setExpandedDate] = useState<string | null>(null);
+  const [setsMap, setSetsMap] = useState<Record<string, SetDetail[]>>({});
 
   useEffect(() => {
     getSessions().then((data) => {
@@ -31,27 +41,29 @@ export default function HistoryPage() {
     });
   }, []);
 
-  async function handleExpand(session: Session) {
+  async function handleExpand(date: string) {
     // if already expanded, collapse it
-    if (expandedId === session.id) {
-      setExpandedId(null);
+    if (expandedDate === date) {
+      setExpandedDate(null);
       return;
     }
 
-    // if we haven't loaded the sets for this session yet, fetch them
-    if (!setsMap[session.id]) {
-      const sets = await getSessionSets(session.id);
-      setSetsMap((prev) => ({ ...prev, [session.id]: sets }));
+    // if we haven't loaded the sets for this date yet, fetch them
+    if (!setsMap[date]) {
+      const sessionsForDate = sessions.filter((s) => s.date === date);
+      const allSets: SetDetail[] = [];
+
+      for (const session of sessionsForDate) {
+        const sets = await getSessionSets(session.id);
+        allSets.push(...sets);
+      }
+
+      setSetsMap((prev) => ({ ...prev, [date]: allSets }));
     }
 
-    setExpandedId(session.id);
+    setExpandedDate(date);
   }
 
-  async function handleDelete(id: number) {
-    await deleteSession(id);
-    setSessions((prev) => prev.filter((s) => s.id !== id));
-    if (expandedId === id) setExpandedId(null);
-  }
 
   function formatDate(dateStr: string) {
     return new Date(dateStr).toLocaleDateString("en-US", {
@@ -63,6 +75,22 @@ export default function HistoryPage() {
     });
   }
 
+  // Group sessions by date
+  const groupedByDate = sessions.reduce((acc, session) => {
+    const existing = acc.find((g) => g.date === session.date);
+    if (existing) {
+      existing.sessions.push(session);
+    } else {
+      acc.push({ date: session.date, sessions: [session] });
+    }
+    return acc;
+  }, [] as GroupedSessions[]);
+
+  // Sort by date descending
+  groupedByDate.sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
   return (
     <main className="max-w-xl mx-auto p-6">
       <Link href="/" className="text-sm text-blue-600 hover:text-blue-800 mb-4 inline-block">
@@ -72,55 +100,44 @@ export default function HistoryPage() {
 
       {loading ? (
         <p className="text-gray-400 text-sm">Loading...</p>
-      ) : sessions.length === 0 ? (
+      ) : groupedByDate.length === 0 ? (
         <p className="text-gray-400 text-sm">No workouts logged yet.</p>
       ) : (
         <ul className="space-y-3">
-          {sessions.map((session) => (
-            <li key={session.id} className="border border-gray-200 rounded">
-              {/* Session header */}
+          {groupedByDate.map((group) => (
+            <li key={group.date} className="border border-gray-200 rounded">
+              {/* Date header */}
               <div
                 className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50"
-                onClick={() => handleExpand(session)}
+                onClick={() => handleExpand(group.date)}
               >
                 <div>
-                  <p className="text-sm font-medium">{formatDate(session.date)}</p>
-                  {session.notes && (
-                    <p className="text-xs text-gray-400 mt-0.5">{session.notes}</p>
-                  )}
+                  <p className="text-sm font-medium">{formatDate(group.date)}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(session.id);
-                    }}
-                    className="text-red-400 hover:text-red-600 text-xs"
-                  >
-                    Delete
-                  </button>
                   <span className="text-gray-400 text-xs">
-                    {expandedId === session.id ? "▲" : "▼"}
+                    {expandedDate === group.date ? "▲" : "▼"}
                   </span>
                 </div>
               </div>
 
               {/* Expanded sets */}
-              {expandedId === session.id && (
+              {expandedDate === group.date && (
                 <div className="border-t border-gray-100 px-4 py-3">
-                  {!setsMap[session.id] ? (
+                  {!setsMap[group.date] ? (
                     <p className="text-xs text-gray-400">Loading...</p>
-                  ) : setsMap[session.id].length === 0 ? (
+                  ) : setsMap[group.date].length === 0 ? (
                     <p className="text-xs text-gray-400">No sets logged.</p>
                   ) : (
-                    <ul className="space-y-1">
-                      {setsMap[session.id].map((s, i) => (
-                        <li key={i} className="text-sm">
-                          <span className="font-medium">{s.exercise_name}</span>{" "}
-                          — Set {s.set_number}: {s.reps} reps @ {s.weight_lbs} lbs
-                        </li>
-                      ))}
-                    </ul>
+                    <>
+                      <ul className="space-y-2 mb-3">
+                        {setsMap[group.date].map((s, i) => (
+                          <li key={i} className="text-sm">
+                            <span className="font-medium">{s.exercise_name}</span> — {s.time !== undefined ? `${s.time}min @ ${s.speed}${s.exercise_name.toLowerCase() === "treadmill" ? "mph" : ""}${s.level !== undefined ? ` (Pace ${s.level})` : ""}` : `Set ${s.set_number}: ${s.reps} reps @ ${s.weight_lbs} lbs`}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
                   )}
                 </div>
               )}
