@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getExercises, createSession } from "@/lib/api";
 
 interface Exercise {
@@ -30,6 +30,7 @@ export default function LogPage() {
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const dateInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     getExercises().then(setExercises);
@@ -64,6 +65,22 @@ export default function LogPage() {
     setSets((prev) => prev.filter((_, i) => i !== index));
   }
 
+  function openDatePicker() {
+    const input = dateInputRef.current;
+    if (!input) return;
+
+    //error, fixed to using try catch so browser accepts user input
+    try {
+      if (typeof input.showPicker === "function") {
+        input.showPicker();
+      } else {
+        input.focus();
+      }
+    } catch {
+      input.focus();
+    }
+  }
+
   async function handleSave() {
     if (sets.length === 0) return;
     setSaving(true);
@@ -93,15 +110,20 @@ export default function LogPage() {
       <h1 className="text-2xl font-bold mb-6">Log Workout</h1>
 
       {/* Date */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">Date</label>
+        <div className="mb-4">
+        <label htmlFor="workout-date" className="block text-sm font-medium mb-1">
+            Date
+        </label>
         <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="border border-gray-300 rounded px-3 py-2 text-sm w-full"
+            id="workout-date"
+            ref={dateInputRef}
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            onClick={openDatePicker}
+            className="border border-gray-300 rounded px-3 py-2 text-sm w-full"
         />
-      </div>
+        </div>
 
       {/* Notes */}
       <div className="mb-6">
@@ -121,7 +143,7 @@ export default function LogPage() {
         <div className="flex flex-col gap-2">
           <select
             value={selectedExerciseId}
-            onChange={(e) => setSelectedExerciseId(Number(e.target.value))}
+            onChange={(e) => setSelectedExerciseId(e.target.value === "" ? "" : Number(e.target.value))}
             className="border border-gray-300 rounded px-3 py-2 text-sm"
           >
             <option value="">Select exercise...</option>
