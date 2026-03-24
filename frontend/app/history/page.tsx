@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getSessions, deleteSession, getSessionSets } from "@/lib/api";
 
@@ -64,6 +65,9 @@ export default function HistoryPage() {
 
   return (
     <main className="max-w-xl mx-auto p-6">
+      <Link href="/" className="text-sm text-blue-600 hover:text-blue-800 mb-4 inline-block">
+        ← Back
+      </Link>
       <h1 className="text-2xl font-bold mb-6">Workout History</h1>
 
       {loading ? (
