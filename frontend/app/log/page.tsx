@@ -413,7 +413,7 @@ export default function LogPage() {
                 className="flex items-center justify-between border border-gray-200 rounded px-4 py-3 text-sm"
               >
                 <span>
-                  <span className="font-medium">{s.exercise_name}</span> — {s.time !== undefined ? `${s.time}min @ ${s.speed}${s.exercise_name.toLowerCase() === "treadmill" ? "mph" : ""}${s.level !== undefined ? ` (Pace ${s.level})` : ""}` : `${s.reps} reps @ ${s.weight_lbs} lbs`}
+                  <span className="font-medium">{s.exercise_name}</span> — {s.time !== undefined ? `${s.time}min @ ${s.speed}${s.exercise_name.toLowerCase() === "treadmill" ? "mph" : ""}${s.level !== undefined ? ` (Pace ${s.level})` : ""}` : `Set ${s.set_number}: ${s.reps} reps @ ${s.weight_lbs} lbs`}
                 </span>
                 <div className="flex items-center gap-3 ml-4">
                   <button
