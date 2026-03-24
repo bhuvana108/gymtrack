@@ -39,6 +39,7 @@ export default function LogPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [inputError, setInputError] = useState("");
+  const [editingSetIndex, setEditingSetIndex] = useState<number | null>(null);
   const dateInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedExercise = exercises.find((e) => e.id === Number(selectedExerciseId));
@@ -97,12 +98,17 @@ export default function LogPage() {
     }
 
     // count how many sets already exist for this exercise
-    const existingSets = sets.filter((s) => s.exercise_id === selectedExercise.id);
+    const existingSets = sets.filter(
+      (s, index) => s.exercise_id === selectedExercise.id && index !== editingSetIndex
+    );
 
     const newSet: SetEntry = {
       exercise_id: selectedExercise.id,
       exercise_name: selectedExercise.name,
-      set_number: existingSets.length + 1,
+      set_number:
+        editingSetIndex !== null && sets[editingSetIndex]?.exercise_id === selectedExercise.id
+          ? sets[editingSetIndex].set_number
+          : existingSets.length + 1,
     };
 
     if (isCardio) {
@@ -117,7 +123,12 @@ export default function LogPage() {
       newSet.weight_lbs = weightValue;
     }
 
-    setSets((prev) => [...prev, newSet]);
+    setSets((prev) => {
+      if (editingSetIndex !== null) {
+        return prev.map((set, index) => (index === editingSetIndex ? newSet : set));
+      }
+      return [...prev, newSet];
+    });
 
     // reset fields
     setReps("");
@@ -126,11 +137,49 @@ export default function LogPage() {
     setLevel("");
     setSpeed("");
     setIncline("");
+    setEditingSetIndex(null);
   }
 
   function handleRemoveSet(index: number) {
     setInputError("");
+
+    if (editingSetIndex === index) {
+      setEditingSetIndex(null);
+      setSelectedExerciseId("");
+      setReps("");
+      setWeight("");
+      setTime("");
+      setLevel("");
+      setSpeed("");
+      setIncline("");
+    }
+
     setSets((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function handleEditSet(index: number) {
+    const setToEdit = sets[index];
+    if (!setToEdit) return;
+
+    setInputError("");
+    setEditingSetIndex(index);
+    setSelectedExerciseId(setToEdit.exercise_id);
+
+    if (setToEdit.time !== undefined) {
+      setTime(String(setToEdit.time));
+      setLevel(setToEdit.level !== undefined ? String(setToEdit.level) : "");
+      setSpeed(setToEdit.speed !== undefined ? String(setToEdit.speed) : "");
+      setIncline(setToEdit.incline !== undefined ? String(setToEdit.incline) : "");
+      setReps("");
+      setWeight("");
+    } else {
+      setReps(setToEdit.reps !== undefined ? String(setToEdit.reps) : "");
+      setWeight(setToEdit.weight_lbs !== undefined ? String(setToEdit.weight_lbs) : "");
+      setTime("");
+      setLevel("");
+      setSpeed("");
+      setIncline("");
+    }
   }
 
   function openDatePicker() {
@@ -173,6 +222,14 @@ export default function LogPage() {
     setSaved(true);
     setSets([]);
     setNotes("");
+    setEditingSetIndex(null);
+    setSelectedExerciseId("");
+    setReps("");
+    setWeight("");
+    setTime("");
+    setLevel("");
+    setSpeed("");
+    setIncline("");
   }
 
   return (
@@ -210,9 +267,17 @@ export default function LogPage() {
         />
       </div>
 
-      {/* Add a set / cardio */}
+      {/* Add a set / cardio info */}
       <div className="border border-gray-200 rounded p-4 mb-6">
-        <h2 className="text-sm font-semibold mb-3">{isCardio ? "Add Cardio Details" : "Add a Set"}</h2>
+        <h2 className="text-sm font-semibold mb-3">
+          {editingSetIndex !== null
+            ? isCardio
+              ? "Edit Cardio Details"
+              : "Edit Set"
+            : isCardio
+              ? "Add Cardio Details"
+              : "Add a Set"}
+        </h2>
         <div className="flex flex-col gap-2">
           <select
             value={selectedExerciseId}
@@ -324,7 +389,11 @@ export default function LogPage() {
             onClick={handleAddSet}
             className="bg-black text-white px-4 py-2 rounded text-sm hover:bg-gray-800"
           >
-            + {isCardio ? "Add Cardio Details" : "Add Set"}
+            {editingSetIndex !== null
+              ? isCardio
+                ? "Save Cardio Changes"
+                : "Save Set Changes"
+              : `+ ${isCardio ? "Add Cardio Details" : "Add Set"}`}
           </button>
 
           {inputError && (
@@ -346,12 +415,20 @@ export default function LogPage() {
                 <span>
                   <span className="font-medium">{s.exercise_name}</span> — {s.time !== undefined ? `${s.time}min @ ${s.speed}${s.exercise_name.toLowerCase() === "treadmill" ? "mph" : ""}${s.level !== undefined ? ` (Pace ${s.level})` : ""}` : `${s.reps} reps @ ${s.weight_lbs} lbs`}
                 </span>
-                <button
-                  onClick={() => handleRemoveSet(i)}
-                  className="text-red-400 hover:text-red-600 text-xs ml-4"
-                >
-                  Remove
-                </button>
+                <div className="flex items-center gap-3 ml-4">
+                  <button
+                    onClick={() => handleEditSet(i)}
+                    className="text-blue-500 hover:text-blue-700 text-xs"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleRemoveSet(i)}
+                    className="text-red-400 hover:text-red-600 text-xs"
+                  >
+                    Remove
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
