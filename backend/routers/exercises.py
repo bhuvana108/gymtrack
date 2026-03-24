@@ -46,3 +46,20 @@ def delete_exercise(exercise_id: int):
     if not deleted:
         raise HTTPException(status_code=404, detail="Exercise not found")
     return {"deleted": exercise_id}
+
+#updating exercise info
+@router.patch("/{exercise_id}", response_model=Exercise)
+def update_exercise(exercise_id: int, exercise: ExerciseCreate):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE exercises SET name = %s WHERE id = %s RETURNING *",
+        (exercise.name, exercise_id)
+    )
+    updated_exercise = cur.fetchone()
+    conn.commit()
+    cur.close()
+    conn.close()
+    if not updated_exercise:
+        raise HTTPException(status_code=404, detail="Exercise not found")
+    return updated_exercise
