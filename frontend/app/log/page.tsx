@@ -57,7 +57,7 @@ export default function LogPage() {
 
     const num = Number(value);
     if (num < 0 || num > 300) {
-      setInputError("Invalid input entered! Max: 300 lbs");
+      setInputError("Invalid input entered! (Range: 0-300)");
     } else {
       setInputError("");
     }
