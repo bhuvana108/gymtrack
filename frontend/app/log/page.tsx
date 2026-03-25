@@ -76,21 +76,34 @@ export default function LogPage() {
     const inclineValue = Number(incline);
 
     if (isCardio) {
-      if (!time || !level || !speed) return;
+      if (!time) {
+        setInputError("Enter time for cardio.");
+        return;
+      }
+      if (isTreadmill) {
+        if (!speed) {
+          setInputError("Enter time and speed for treadmill.");
+          return;
+        }
+      } else if (!level) {
+        setInputError("Enter time and level for stairmaster.");
+        return;
+      }
       if (
         timeValue < 0 ||
         timeValue > 300 ||
-        levelValue < 0 ||
-        levelValue > 300 ||
-        speedValue < 0 ||
-        speedValue > 300 ||
+        (level && (levelValue < 0 || levelValue > 300)) ||
+        (speed && (speedValue < 0 || speedValue > 300)) ||
         (isTreadmill && incline && (inclineValue < 0 || inclineValue > 300))
       ) {
         setInputError("Invalid Input entered");
         return;
       }
     } else {
-      if (!reps || !weight) return;
+      if (!reps || !weight) {
+        setInputError("Enter reps and weight before adding a set.");
+        return;
+      }
       if (repsValue < 0 || repsValue > 300 || weightValue < 0 || weightValue > 300) {
         setInputError("Invalid Input entered");
         return;
@@ -113,8 +126,12 @@ export default function LogPage() {
 
     if (isCardio) {
       newSet.time = timeValue;
-      newSet.level = levelValue;
-      newSet.speed = speedValue;
+      if (level) {
+        newSet.level = levelValue;
+      }
+      if (speed) {
+        newSet.speed = speedValue;
+      }
       if (isTreadmill && incline) {
         newSet.incline = inclineValue;
       }
@@ -308,7 +325,7 @@ export default function LogPage() {
                   }}
                   className="border border-gray-300 rounded px-3 py-2 text-sm w-full"
                 />
-                {isTreadmill ? (
+                {isTreadmill && (
                   <input
                     type="number"
                     min="0"
@@ -322,13 +339,16 @@ export default function LogPage() {
                     }}
                     className="border border-gray-300 rounded px-3 py-2 text-sm w-full"
                   />
-                ) : (
+                )}
+              </div>
+              <div className="flex gap-2">
+                {!isTreadmill && (
                   <input
                     type="number"
                     min="0"
                     max="300"
                     step="0.1"
-                    placeholder="Speed Number (e.g. 1, 2, 6)"
+                    placeholder="Level"
                     value={level}
                     onChange={(e) => {
                       setLevel(e.target.value);
@@ -337,8 +357,6 @@ export default function LogPage() {
                     className="border border-gray-300 rounded px-3 py-2 text-sm w-full"
                   />
                 )}
-              </div>
-              <div className="flex gap-2">
                 {isTreadmill && (
                   <input
                     type="number"
@@ -413,7 +431,7 @@ export default function LogPage() {
                 className="flex items-center justify-between border border-gray-200 rounded px-4 py-3 text-sm"
               >
                 <span>
-                  <span className="font-medium">{s.exercise_name}</span> — {s.time !== undefined ? `${s.time}min @ ${s.speed}${s.exercise_name.toLowerCase() === "treadmill" ? "mph" : ""}${s.level !== undefined ? ` (Pace ${s.level})` : ""}` : `Set ${s.set_number}: ${s.reps} reps @ ${s.weight_lbs} lbs`}
+                  <span className="font-medium">{s.exercise_name}</span> — {s.time !== undefined ? `${s.time}min${s.speed !== undefined ? ` @ ${s.speed}${s.exercise_name.toLowerCase() === "treadmill" ? "mph" : ""}` : ""}${s.level !== undefined ? ` (Level ${s.level})` : ""}` : `Set ${s.set_number}: ${s.reps} reps @ ${s.weight_lbs} lbs`}
                 </span>
                 <div className="flex items-center gap-3 ml-4">
                   <button
