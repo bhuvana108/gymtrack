@@ -15,16 +15,24 @@ class Exercise(BaseModel):
 class SetCreate(BaseModel):
     exercise_id: int
     set_number: int
-    reps: int
-    weight_lbs: float
+    reps: Optional[int] = None
+    weight_lbs: Optional[float] = None
+    time: Optional[float] = None
+    level: Optional[float] = None
+    speed: Optional[float] = None
+    incline: Optional[float] = None
 
 class Set(BaseModel):
     id: int
     session_id: int
     exercise_id: int
     set_number: int
-    reps: int
-    weight_lbs: float
+    reps: Optional[int] = None
+    weight_lbs: Optional[float] = None
+    time: Optional[float] = None
+    level: Optional[float] = None
+    speed: Optional[float] = None
+    incline: Optional[float] = None
 
 #Sessions/Workouts
 class SessionCreate(BaseModel):
