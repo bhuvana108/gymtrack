@@ -21,6 +21,23 @@ interface SetEntry {
   incline?: number;
 }
 
+function formatSetDetail(set: SetEntry) {
+  const hasTime = set.time != null;
+  const hasSpeed = set.speed != null;
+  const hasLevel = set.level != null;
+
+  if (hasTime) {
+    const speedSuffix = hasSpeed
+      ? ` @ ${set.speed}${set.exercise_name.toLowerCase() === "treadmill" ? "mph" : ""}`
+      : "";
+    const levelSuffix = hasLevel ? ` (Level ${set.level})` : "";
+
+    return `${set.time}min${speedSuffix}${levelSuffix}`;
+  }
+
+  return `Set ${set.set_number}: ${set.reps} reps @ ${set.weight_lbs} lbs`;
+}
+
 export default function LogPage() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
@@ -182,16 +199,16 @@ export default function LogPage() {
     setEditingSetIndex(index);
     setSelectedExerciseId(setToEdit.exercise_id);
 
-    if (setToEdit.time !== undefined) {
+    if (setToEdit.time != null) {
       setTime(String(setToEdit.time));
-      setLevel(setToEdit.level !== undefined ? String(setToEdit.level) : "");
-      setSpeed(setToEdit.speed !== undefined ? String(setToEdit.speed) : "");
-      setIncline(setToEdit.incline !== undefined ? String(setToEdit.incline) : "");
+      setLevel(setToEdit.level != null ? String(setToEdit.level) : "");
+      setSpeed(setToEdit.speed != null ? String(setToEdit.speed) : "");
+      setIncline(setToEdit.incline != null ? String(setToEdit.incline) : "");
       setReps("");
       setWeight("");
     } else {
-      setReps(setToEdit.reps !== undefined ? String(setToEdit.reps) : "");
-      setWeight(setToEdit.weight_lbs !== undefined ? String(setToEdit.weight_lbs) : "");
+      setReps(setToEdit.reps != null ? String(setToEdit.reps) : "");
+      setWeight(setToEdit.weight_lbs != null ? String(setToEdit.weight_lbs) : "");
       setTime("");
       setLevel("");
       setSpeed("");
@@ -227,8 +244,8 @@ export default function LogPage() {
         const { exercise_id, set_number } = set;
         const baseSet = { exercise_id, set_number };
         
-        if (set.time !== undefined) {
-          return { ...baseSet, time: set.time, level: set.level, speed: set.speed, ...(set.incline !== undefined && { incline: set.incline }) };
+        if (set.time != null) {
+          return { ...baseSet, time: set.time, level: set.level, speed: set.speed, ...(set.incline != null && { incline: set.incline }) };
         } else {
           return { ...baseSet, reps: set.reps, weight_lbs: set.weight_lbs };
         }
@@ -431,7 +448,7 @@ export default function LogPage() {
                 className="flex items-center justify-between border border-gray-200 rounded px-4 py-3 text-sm"
               >
                 <span>
-                  <span className="font-medium">{s.exercise_name}</span> — {s.time !== undefined ? `${s.time}min${s.speed !== undefined ? ` @ ${s.speed}${s.exercise_name.toLowerCase() === "treadmill" ? "mph" : ""}` : ""}${s.level !== undefined ? ` (Level ${s.level})` : ""}` : `Set ${s.set_number}: ${s.reps} reps @ ${s.weight_lbs} lbs`}
+                  <span className="font-medium">{s.exercise_name}</span> — {formatSetDetail(s)}
                 </span>
                 <div className="flex items-center gap-3 ml-4">
                   <button
