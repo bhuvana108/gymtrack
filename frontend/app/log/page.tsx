@@ -21,6 +21,13 @@ interface SetEntry {
   incline?: number;
 }
 
+const REST_PRESETS = [
+  { label: "30s", seconds: 30 },
+  { label: "60s", seconds: 60 },
+  { label: "90s", seconds: 90 },
+  { label: "2m", seconds: 120 },
+];
+
 function formatSetDetail(set: SetEntry) {
   const hasTime = set.time != null;
   const hasSpeed = set.speed != null;
@@ -36,6 +43,13 @@ function formatSetDetail(set: SetEntry) {
   }
 
   return `Set ${set.set_number}: ${set.reps} reps @ ${set.weight_lbs} lbs`;
+}
+
+function formatTimer(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
+  return `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
 }
 
 export default function LogPage() {
@@ -58,6 +72,10 @@ export default function LogPage() {
   const [inputError, setInputError] = useState("");
   const [editingSetIndex, setEditingSetIndex] = useState<number | null>(null);
   const dateInputRef = useRef<HTMLInputElement | null>(null);
+  const [selectedRestSeconds, setSelectedRestSeconds] = useState<number | null>(null);
+  const [remainingRestSeconds, setRemainingRestSeconds] = useState(0);
+  const [isRestTimerRunning, setIsRestTimerRunning] = useState(false);
+  const [restTimerCompleted, setRestTimerCompleted] = useState(false);
 
   const selectedExercise = exercises.find((e) => e.id === Number(selectedExerciseId));
   const isCardio = selectedExercise && (selectedExercise.name.toLowerCase() === "treadmill" || selectedExercise.name.toLowerCase() === "stairmaster");
@@ -66,6 +84,27 @@ export default function LogPage() {
   useEffect(() => {
     getExercises().then(setExercises);
   }, []);
+
+  useEffect(() => {
+    if (!isRestTimerRunning) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setRemainingRestSeconds((currentSeconds) => {
+        if (currentSeconds <= 1) {
+          window.clearInterval(timer);
+          setIsRestTimerRunning(false);
+          setRestTimerCompleted(true);
+          return 0;
+        }
+
+        return currentSeconds - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [isRestTimerRunning]);
 
   function validateRange(value: string) {
     if (value === "") {
@@ -232,6 +271,38 @@ export default function LogPage() {
     }
   }
 
+  function handleSelectRestPreset(seconds: number) {
+    setSelectedRestSeconds(seconds);
+    setRemainingRestSeconds(seconds);
+    setIsRestTimerRunning(false);
+    setRestTimerCompleted(false);
+  }
+
+  function handleStartRestTimer() {
+    if (remainingRestSeconds === 0) {
+      return;
+    }
+
+    setIsRestTimerRunning(true);
+    setRestTimerCompleted(false);
+  }
+
+  function handleToggleRestTimer() {
+    if (remainingRestSeconds === 0) {
+      return;
+    }
+
+    setIsRestTimerRunning((currentValue) => !currentValue);
+    setRestTimerCompleted(false);
+  }
+
+  function handleResetRestTimer() {
+    setSelectedRestSeconds(null);
+    setRemainingRestSeconds(0);
+    setIsRestTimerRunning(false);
+    setRestTimerCompleted(false);
+  }
+
   async function handleSave() {
     if (sets.length === 0) return;
     setInputError("");
@@ -299,6 +370,99 @@ export default function LogPage() {
           placeholder="e.g. Felt strong today"
           className="border border-gray-300 rounded px-3 py-2 text-sm w-full"
         />
+      </div>
+
+      <div className="border border-gray-200 rounded p-4 mb-6">
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-sm font-semibold">Rest Timer</h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Start a countdown between sets and reset it whenever you are ready.
+            </p>
+          </div>
+          {(selectedRestSeconds !== null || restTimerCompleted) && (
+            <button
+              type="button"
+              onClick={handleResetRestTimer}
+              className="text-xs text-gray-500 hover:text-gray-700"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          {REST_PRESETS.map((preset) => {
+            const isSelected = selectedRestSeconds === preset.seconds;
+
+            return (
+              <button
+                key={preset.seconds}
+                type="button"
+                onClick={() => handleSelectRestPreset(preset.seconds)}
+                className={`rounded border px-3 py-2 text-sm transition ${
+                  isSelected
+                    ? "border-black bg-black text-white"
+                    : "border-gray-300 hover:bg-gray-50"
+                }`}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div
+          className={`rounded border px-4 py-5 text-center ${
+            restTimerCompleted
+              ? "border-green-200 bg-green-50"
+              : "border-gray-200 bg-gray-50"
+          }`}
+        >
+          <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">
+            {restTimerCompleted
+              ? "Rest complete"
+              : isRestTimerRunning
+                ? "Resting"
+                : remainingRestSeconds > 0
+                  ? "Paused"
+                  : "Ready"}
+          </p>
+          <p
+            className={`text-3xl font-semibold ${
+              restTimerCompleted ? "text-green-600" : "text-gray-900"
+            }`}
+          >
+            {formatTimer(remainingRestSeconds)}
+          </p>
+        </div>
+
+        <div className="flex gap-2 mt-4">
+          <button
+            type="button"
+            onClick={handleStartRestTimer}
+            disabled={remainingRestSeconds === 0 || isRestTimerRunning}
+            className="bg-black text-white px-4 py-2 rounded text-sm hover:bg-gray-800 disabled:opacity-40"
+          >
+            Start
+          </button>
+          <button
+            type="button"
+            onClick={handleToggleRestTimer}
+            disabled={remainingRestSeconds === 0 || restTimerCompleted}
+            className="border border-gray-300 px-4 py-2 rounded text-sm hover:bg-gray-50 disabled:opacity-40"
+          >
+            {isRestTimerRunning ? "Pause" : "Resume"}
+          </button>
+          <button
+            type="button"
+            onClick={handleResetRestTimer}
+            disabled={selectedRestSeconds === null && !restTimerCompleted}
+            className="border border-gray-300 px-4 py-2 rounded text-sm hover:bg-gray-50 disabled:opacity-40"
+          >
+            Clear
+          </button>
+        </div>
       </div>
 
       {/* Add a set / cardio info */}
