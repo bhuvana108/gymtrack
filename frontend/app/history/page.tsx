@@ -133,7 +133,7 @@ export default function HistoryPage() {
                       <ul className="space-y-2 mb-3">
                         {setsMap[group.date].map((s, i) => (
                           <li key={i} className="text-sm">
-                            <span className="font-medium">{s.exercise_name}</span> — {s.time !== undefined ? `${s.time}min @ ${s.speed}${s.exercise_name.toLowerCase() === "treadmill" ? "mph" : ""}${s.level !== undefined ? ` (Pace ${s.level})` : ""}` : `Set ${s.set_number}: ${s.reps} reps @ ${s.weight_lbs} lbs`}
+                            <span className="font-medium">{s.exercise_name}</span> — {s.time !== undefined ? `${s.time}min${s.speed !== undefined ? ` @ ${s.speed}${s.exercise_name.toLowerCase() === "treadmill" ? "mph" : ""}` : ""}${s.level !== undefined ? ` (Level ${s.level})` : ""}` : `Set ${s.set_number}: ${s.reps} reps @ ${s.weight_lbs} lbs`}
                           </li>
                         ))}
                       </ul>

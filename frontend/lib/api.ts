@@ -49,8 +49,12 @@ export async function createSession(data: {
   sets: {
     exercise_id: number;
     set_number: number;
-    reps: number;
-    weight_lbs: number;
+    reps?: number;
+    weight_lbs?: number;
+    time?: number;
+    level?: number;
+    speed?: number;
+    incline?: number;
   }[];
 }) {
   const res = await fetch(`${API_URL}/sessions/`, {
