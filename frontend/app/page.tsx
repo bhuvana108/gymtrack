@@ -14,7 +14,7 @@ export default function DashboardPage() {
           className="block border border-gray-200 rounded px-4 py-4 hover:bg-gray-50"
         >
           <p className="font-medium text-sm">Log Workout</p>
-          <p className="text-xs text-gray-400 mt-0.5">Record today's sets, reps, and weight</p>
+          <p className="text-xs text-gray-400 mt-0.5">Record today&apos;s sets, reps, and weight</p>
         </Link>
 
         <Link

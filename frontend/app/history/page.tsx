@@ -28,6 +28,23 @@ interface GroupedSessions {
   allSets?: SetDetail[];
 }
 
+function formatSetDetail(set: SetDetail) {
+  const hasTime = set.time != null;
+  const hasSpeed = set.speed != null;
+  const hasLevel = set.level != null;
+
+  if (hasTime) {
+    const speedSuffix = hasSpeed
+      ? ` @ ${set.speed}${set.exercise_name.toLowerCase() === "treadmill" ? "mph" : ""}`
+      : "";
+    const levelSuffix = hasLevel ? ` (Level ${set.level})` : "";
+
+    return `${set.time}min${speedSuffix}${levelSuffix}`;
+  }
+
+  return `Set ${set.set_number}: ${set.reps} reps @ ${set.weight_lbs} lbs`;
+}
+
 export default function HistoryPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,7 +150,7 @@ export default function HistoryPage() {
                       <ul className="space-y-2 mb-3">
                         {setsMap[group.date].map((s, i) => (
                           <li key={i} className="text-sm">
-                            <span className="font-medium">{s.exercise_name}</span> — {s.time !== undefined ? `${s.time}min${s.speed !== undefined ? ` @ ${s.speed}${s.exercise_name.toLowerCase() === "treadmill" ? "mph" : ""}` : ""}${s.level !== undefined ? ` (Level ${s.level})` : ""}` : `Set ${s.set_number}: ${s.reps} reps @ ${s.weight_lbs} lbs`}
+                            <span className="font-medium">{s.exercise_name}</span> — {formatSetDetail(s)}
                           </li>
                         ))}
                       </ul>
