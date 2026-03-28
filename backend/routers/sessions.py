@@ -5,6 +5,15 @@ from schemas import Session, SessionCreate
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
 
+def is_cardio_set(set_data):
+    return (
+        set_data.time is not None
+        or set_data.level is not None
+        or set_data.speed is not None
+        or set_data.incline is not None
+    )
+
+
 #get sessions
 @router.get("/", response_model=list[Session])
 def get_sessions():
@@ -32,10 +41,37 @@ def create_session(session: SessionCreate):
 
     #Step 2: insert each set linked to this session
     for s in session.sets:
+        if is_cardio_set(s):
+            if s.time is None:
+                cur.close()
+                conn.close()
+                raise HTTPException(status_code=422, detail="Cardio sets require time")
+
+            if s.level is None and s.speed is None:
+                cur.close()
+                conn.close()
+                raise HTTPException(status_code=422, detail="Cardio sets require either level or speed")
+
+            cur.execute(
+                """INSERT INTO sets (
+                       session_id, exercise_id, set_number, reps, weight_lbs, time, level, speed, incline
+                   )
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                (session_id, s.exercise_id, s.set_number, None, None, s.time, s.level, s.speed, s.incline)
+            )
+            continue
+
+        if s.reps is None or s.weight_lbs is None:
+            cur.close()
+            conn.close()
+            raise HTTPException(status_code=422, detail="Strength sets require reps and weight_lbs")
+
         cur.execute(
-            """INSERT INTO sets (session_id, exercise_id, set_number, reps, weight_lbs)
-               VALUES (%s, %s, %s, %s, %s)""",
-            (session_id, s.exercise_id, s.set_number, s.reps, s.weight_lbs)
+            """INSERT INTO sets (
+                   session_id, exercise_id, set_number, reps, weight_lbs, time, level, speed, incline
+               )
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            (session_id, s.exercise_id, s.set_number, s.reps, s.weight_lbs, None, None, None, None)
         )
 
     conn.commit()
@@ -65,7 +101,15 @@ def get_session_sets(session_id: int):
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        SELECT s.set_number, s.reps, s.weight_lbs, e.name as exercise_name
+        SELECT
+            s.set_number,
+            s.reps,
+            s.weight_lbs,
+            s.time,
+            s.level,
+            s.speed,
+            s.incline,
+            e.name as exercise_name
         FROM sets s
         JOIN exercises e ON s.exercise_id = e.id
         WHERE s.session_id = %s

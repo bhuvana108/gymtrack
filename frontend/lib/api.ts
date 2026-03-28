@@ -22,6 +22,15 @@ export async function deleteExercise(id: number) {
   await fetch(`${API_URL}/exercises/${id}`, { method: "DELETE" });
 }
 
+export async function updateExercise(id: number, name: string) {
+  const res = await fetch(`${API_URL}/exercises/${id}`, {
+    method: "PATCH", //used patch instead of post bc we're only updating the name of the exercise, change to PUT if errors occur
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  return res.json();
+}
+
 //Sessions 
 
 export async function getSessions() {
@@ -40,8 +49,12 @@ export async function createSession(data: {
   sets: {
     exercise_id: number;
     set_number: number;
-    reps: number;
-    weight_lbs: number;
+    reps?: number;
+    weight_lbs?: number;
+    time?: number;
+    level?: number;
+    speed?: number;
+    incline?: number;
   }[];
 }) {
   const res = await fetch(`${API_URL}/sessions/`, {

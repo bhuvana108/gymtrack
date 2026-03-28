@@ -20,6 +20,17 @@ app.add_middleware(
 app.include_router(exercises.router)
 app.include_router(sessions.router)
 
+
+@app.on_event("startup")
+def ensure_cardio_columns_are_compatible():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("ALTER TABLE sets ALTER COLUMN reps DROP NOT NULL")
+    cur.execute("ALTER TABLE sets ALTER COLUMN weight_lbs DROP NOT NULL")
+    conn.commit()
+    cur.close()
+    conn.close()
+
 @app.get("/health")
 def health():
     conn = get_connection()

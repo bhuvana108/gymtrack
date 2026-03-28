@@ -2,8 +2,9 @@
 
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getExercises, createExercise, deleteExercise } from "@/lib/api";
+import { getExercises, createExercise, deleteExercise, updateExercise } from "@/lib/api";
 
 interface Exercise {
   id: number;
@@ -15,6 +16,8 @@ export default function ExercisesPage() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [newName, setNewName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingName, setEditingName] = useState("");
 
   useEffect(() => {
     getExercises().then((data) => {
@@ -35,8 +38,31 @@ export default function ExercisesPage() {
     setExercises((prev) => prev.filter((e) => e.id !== id));
   }
 
+  async function handleEditStart(exercise: Exercise) {
+    setEditingId(exercise.id);
+    setEditingName(exercise.name);
+  }
+
+  async function handleEditSave() {
+    if (!editingName.trim() || editingId === null) return;
+    const updated = await updateExercise(editingId, editingName.trim());
+    setExercises((prev) =>
+      prev.map((e) => (e.id === editingId ? { ...e, name: updated.name } : e))
+    );
+    setEditingId(null);
+    setEditingName("");
+  }
+
+  function handleEditCancel() {
+    setEditingId(null);
+    setEditingName("");
+  }
+
   return (
     <main className="max-w-xl mx-auto p-6">
+      <Link href="/" className="text-sm text-blue-600 hover:text-blue-800 mb-4 inline-block">
+        ← Back
+      </Link>
       <h1 className="text-2xl font-bold mb-6">Exercise Library</h1>
 
       {/* Add exercise */}
@@ -69,13 +95,50 @@ export default function ExercisesPage() {
               key={exercise.id}
               className="flex items-center justify-between border border-gray-200 rounded px-4 py-3"
             >
-              <span className="text-sm font-medium">{exercise.name}</span>
-              <button
-                onClick={() => handleDelete(exercise.id)}
-                className="text-red-400 hover:text-red-600 text-sm"
-              >
-                Delete
-              </button>
+              {editingId === exercise.id ? (
+                <input
+                  type="text"
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm"
+                  autoFocus
+                />
+              ) : (
+                <span className="text-sm font-medium">{exercise.name}</span>
+              )}
+              <div className="flex gap-2 ml-4">
+                {editingId === exercise.id ? (
+                  <>
+                    <button
+                      onClick={handleEditSave}
+                      className="text-green-600 hover:text-green-800 text-sm"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={handleEditCancel}
+                      className="text-gray-500 hover:text-gray-700 text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => handleEditStart(exercise)}
+                      className="text-blue-500 hover:text-blue-600 text-sm"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(exercise.id)}
+                      className="text-red-400 hover:text-red-600 text-sm"
+                    >
+                      Delete
+                    </button>
+                  </>
+                )}
+              </div>
             </li>
           ))}
         </ul>
